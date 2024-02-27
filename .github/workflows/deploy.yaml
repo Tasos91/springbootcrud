@@ -1,0 +1,28 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and Push Docker Image
+        run: |
+          docker buildx build --platform linux/amd64 -t registry.digitalocean.com/digitaloceanregistry/springbootcrud:latest .
+          docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} registry.digitalocean.com
+          docker push registry.digitalocean.com/digitaloceanregistry/springbootcrud:latest
+
+      - name: Deploy to Kubernetes
+        run: kubectl apply -f deployment.yaml -f service.yaml
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
